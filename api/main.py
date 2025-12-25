@@ -286,6 +286,43 @@ def add_comment(
     "created_at": comment["created_at"],
 }
 
+@app.get("/projects/{project_id}/comments")
+def list_comments(project_id: str, authorization: str = Header(None)):
+    payload = require_user(authorization)
+
+    try:
+        proj_obj_id = ObjectId(project_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid project_id")
+
+    project = db.projects.find_one({"_id": proj_obj_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # access control: client can see only own project
+    if payload["role"] != "admin":
+        if project.get("owner_id") != payload["user_id"]:
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+    docs = list(
+        db.comments.find({"project_id": str(proj_obj_id)}).sort("created_at", -1)
+    )
+
+    # ✅ convert Mongo _id to string and ensure created_at is JSON-safe
+    out = []
+    for d in docs:
+        out.append({
+            "id": str(d["_id"]),
+            "project_id": d.get("project_id"),
+            "author_id": d.get("author_id"),
+            "author_role": d.get("author_role"),
+            "message": d.get("message"),
+            "created_at": d.get("created_at").isoformat() if d.get("created_at") else None,
+        })
+
+    return out
+
+
 @app.post("/projects/{project_id}/milestones")
 def add_milestone(project_id: str, body: MilestoneCreate, authorization: str = Header(None)):
     require_admin(authorization)
