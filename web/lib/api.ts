@@ -1,4 +1,7 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE!;
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE ||
+  "https://client-projects-management-system.onrender.com";
+
 
 export function getToken() {
   if (typeof window === "undefined") return null;
@@ -38,12 +41,10 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
 }
 
 export async function login(email: string, password: string) {
-  const res = await fetch(`${API_BASE}/auth/login`, {
+  const data = await apiFetch("/auth/login", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-  const data = await parseJson(res);
-  if (!res.ok) throw new Error((data as any)?.detail || "Login failed");
   return data as { access_token: string; token_type: string };
 }
+
