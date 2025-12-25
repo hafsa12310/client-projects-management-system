@@ -24,7 +24,9 @@ app = FastAPI(title="Client Project Management API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+  "http://localhost:3000",
+  "https://client-projects-management-system.vercel.app"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
