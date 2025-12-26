@@ -17,6 +17,8 @@ import { ProjectCard } from "@/components/ProjectCard";
 import type { Project } from "@/components/ProjectCard";
 import { MetricCard } from "@/components/MetricCard";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
+import { AdminAddClientButton } from "@/components/AdminAddClientButton";
+import { AddClientModal } from "@/components/AddClientModal";
 
 // Helpers to map API -> UI card
 function initialsFromTitle(title: string) {
@@ -58,6 +60,8 @@ export default function ProjectsPage() {
   const [rawProjects, setRawProjects] = useState<any[]>([]);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAddClient, setShowAddClient] = useState(false);
 
   const [query, setQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<
@@ -69,6 +73,14 @@ export default function ProjectsPage() {
       try {
         setErr("");
         setLoading(true);
+        // Get current user to determine role
+        try {
+          const me = await apiFetch("/me");
+          setIsAdmin((me as any)?.role === "admin");
+        } catch (e) {
+          // ignore; handled below via error redirects on projects fetch
+        }
+
         const data = await apiFetch("/projects");
         setRawProjects(Array.isArray(data) ? data : []);
       } catch (e: any) {
@@ -288,8 +300,13 @@ export default function ProjectsPage() {
         </div>
       </main>
 
-      {/* For now: just a placeholder action */}
-      <FloatingActionButton onClick={() => console.log("New Project")} />
+      {/* Admin-only: Add Client action */}
+      {isAdmin ? (
+        <>
+          <AdminAddClientButton onClick={() => setShowAddClient(true)} />
+          <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} />
+        </>
+      ) : null}
     </div>
   );
 }
