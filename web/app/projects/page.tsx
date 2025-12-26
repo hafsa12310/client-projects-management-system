@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   FolderKanban,
@@ -19,6 +19,7 @@ import { MetricCard } from "@/components/MetricCard";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { AdminAddClientButton } from "@/components/AdminAddClientButton";
 import { AddClientModal } from "@/components/AddClientModal";
+import { AddProjectModal } from "@/components/AddProjectModal";
 
 // Helpers to map API -> UI card
 function initialsFromTitle(title: string) {
@@ -62,45 +63,48 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
+  const [showAddProject, setShowAddProject] = useState(false);
 
   const [query, setQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<
     "all" | "active" | "completed" | "overdue" | "planning"
   >("all");
 
-  useEffect(() => {
-    (async () => {
+  const loadProjects = useCallback(async () => {
+    try {
+      setErr("");
+      setLoading(true);
+      // Get current user to determine role
       try {
-        setErr("");
-        setLoading(true);
-        // Get current user to determine role
-        try {
-          const me = await apiFetch("/me");
-          setIsAdmin((me as any)?.role === "admin");
-        } catch (e) {
-          // ignore; handled below via error redirects on projects fetch
-        }
-
-        const data = await apiFetch("/projects");
-        setRawProjects(Array.isArray(data) ? data : []);
-      } catch (e: any) {
-        const msg = e?.message || "Failed to load projects";
-        setErr(msg);
-
-        // if token missing/invalid → push to login
-        if (
-          msg.toLowerCase().includes("missing") ||
-          msg.toLowerCase().includes("invalid") ||
-          msg.toLowerCase().includes("token")
-        ) {
-          clearToken();
-          router.push("/login");
-        }
-      } finally {
-        setLoading(false);
+        const me = await apiFetch("/me");
+        setIsAdmin((me as any)?.role === "admin");
+      } catch (e) {
+        // ignore; handled below via error redirects on projects fetch
       }
-    })();
+
+      const data = await apiFetch("/projects");
+      setRawProjects(Array.isArray(data) ? data : []);
+    } catch (e: any) {
+      const msg = e?.message || "Failed to load projects";
+      setErr(msg);
+
+      // if token missing/invalid → push to login
+      if (
+        msg.toLowerCase().includes("missing") ||
+        msg.toLowerCase().includes("invalid") ||
+        msg.toLowerCase().includes("token")
+      ) {
+        clearToken();
+        router.push("/login");
+      }
+    } finally {
+      setLoading(false);
+    }
   }, [router]);
+
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
 
   // Map API -> UI Project type used by ProjectCard
   const projects: Project[] = useMemo(() => {
@@ -222,7 +226,7 @@ export default function ProjectsPage() {
               Logout
             </button>
 
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 border-2 border-white shadow-sm" />
+            <div className="w-8 h-8 rounded-full bg-linear-to-r from-blue-500 to-purple-500 border-2 border-white shadow-sm" />
           </div>
         </div>
       </header>
@@ -261,6 +265,15 @@ export default function ProjectsPage() {
           </h2>
 
           <div className="flex items-center space-x-3">
+            {isAdmin ? (
+              <button
+                onClick={() => setShowAddProject(true)}
+                className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                + Create Project
+              </button>
+            ) : null}
+
             <button className="flex items-center px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
               <Filter size={16} className="mr-2" />
               Filter
@@ -305,6 +318,11 @@ export default function ProjectsPage() {
         <>
           <AdminAddClientButton onClick={() => setShowAddClient(true)} />
           <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} />
+          <AddProjectModal
+            open={showAddProject}
+            onClose={() => setShowAddProject(false)}
+            onCreated={loadProjects}
+          />
         </>
       ) : null}
     </div>

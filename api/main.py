@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+from typing import Optional
 
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -132,6 +133,26 @@ def create_user(body: UserCreate, authorization: str = Header(None)):
         "email": email,
         "role": "client",
     }
+
+
+@app.get("/users")
+def list_users(role: Optional[str] = None, authorization: str = Header(None)):
+    require_admin(authorization)
+
+    query = {}
+    if role:
+        query["role"] = role
+
+    users = []
+    for u in db.users.find(query):
+        users.append({
+            "id": str(u.get("_id")),
+            "email": u.get("email"),
+            "name": u.get("name"),
+            "role": u.get("role"),
+        })
+
+    return users
 
 # ---------------- PROJECTS ----------------
 

@@ -48,3 +48,29 @@ export async function login(email: string, password: string) {
   return data as { access_token: string; token_type: string };
 }
 
+export type CreateProjectInput = {
+  title: string;
+  description?: string;
+  status?: string;
+  client_id: string;
+};
+
+export async function createProject(body: CreateProjectInput) {
+  return apiFetch("/projects", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export type ClientUser = {
+  id: string;
+  email: string;
+  name?: string;
+  role: string;
+};
+
+export async function fetchClients(role?: string) {
+  const query = role ? `?role=${encodeURIComponent(role)}` : "";
+  return apiFetch(`/users${query}`);
+}
+
