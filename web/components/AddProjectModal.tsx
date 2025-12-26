@@ -28,8 +28,6 @@ export function AddProjectModal({ open, onClose, onCreated }: AddProjectModalPro
   const [clientsLoading, setClientsLoading] = useState(false);
   const [clientsErr, setClientsErr] = useState<string | null>(null);
 
-  if (!open) return null;
-
   useEffect(() => {
     if (!open) return;
 
@@ -50,7 +48,9 @@ export function AddProjectModal({ open, onClose, onCreated }: AddProjectModalPro
         setClientsLoading(false);
       }
     })();
-  }, [open, clientId]);
+  }, [open]);
+
+  if (!open) return null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
