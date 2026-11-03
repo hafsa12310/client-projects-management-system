@@ -183,7 +183,8 @@ def create_project(body: ProjectCreate, authorization: str = Header(None)):
         "created_at": datetime.utcnow(),
     }
 
-    res = db.projects.insert_one(project)
+
+    res = db.projects.insert_one(dict(project))
     return {"id": str(res.inserted_id), **project}
 
 
