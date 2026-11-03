@@ -31,7 +31,19 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   if (options.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  // abort if the server never answers (e.g. backend down or cold-starting)
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...options, headers, signal: controller.signal });
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") throw new Error("Server is not responding. Please try again shortly.");
+    throw new Error("Could not reach the server.");
+  } finally {
+    clearTimeout(timeout);
+  }
   const data = await parseJson(res);
 
   if (!res.ok) {

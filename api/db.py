@@ -8,5 +8,6 @@ MONGO_URI = os.getenv("MONGO_URI")
 if not MONGO_URI:
     raise RuntimeError("MONGO_URI is missing. Put it in api/.env")
 
-client = MongoClient(MONGO_URI)
+# fail fast instead of hanging requests when the DB is unreachable
+client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=10000)
 db = client["project_portal"]

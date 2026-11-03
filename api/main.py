@@ -71,7 +71,13 @@ def seed_admin_if_missing():
             "password_hash": hash_password(password),
         })
 
-seed_admin_if_missing()
+@app.on_event("startup")
+def on_startup():
+    # don't let a DB connection problem stop the app from booting
+    try:
+        seed_admin_if_missing()
+    except Exception as e:
+        print(f"Admin seed skipped: {e}")
 
 # ---------------- BASIC ----------------
 
